@@ -50,6 +50,14 @@ CREATE TABLE UserTokens(
 );
 
 
+CREATE TABLE Nlogs (
+    DateLogged TIMESTAMP,
+    -- error, debug, info, trace, warning
+    Level VARCHAR(7),
+    Message Text
+);
+
+
 drop table "passwordmanager_accounts";
 drop table "usertokens";
 drop table "userroles";

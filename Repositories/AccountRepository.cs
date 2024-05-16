@@ -89,7 +89,7 @@ public class AccountRepository : IAccountRepository
 
     public async Task<(string, string, string)> GetUserCurrentRoleAsync(string userId)
     {
-        var userRole = await passwordAccountContext.PasswordmanagerUsers.Where(u=>u.Id == userId).Include(u=>u.Userroles).ThenInclude(ur=>ur.Role).FirstOrDefaultAsync();
+        var userRole = await passwordAccountContext.PasswordmanagerUsers.Where(u => u.Id == userId).Include(u => u.Userroles).ThenInclude(ur => ur.Role).FirstOrDefaultAsync();
 
         return (userRole.Userroles.First().Userid, userRole.Userroles.First().Roleid, userRole.Userroles.First().Role.Name);
     }
@@ -245,7 +245,7 @@ public class AccountRepository : IAccountRepository
                     Passwordhash = passwordHash,
                     Firstname = model.FirstName,
                     Lastname = model.LastName,
-                    // TODO: mark as false when done testing registration
+                    // make sure to keep this as false when done testing registration
                     Emailconfirmed = new BitArray(new bool[] { false }),
                     Lockoutenabled = new BitArray(new bool[] { false }),
                     Lockoutenddateutc = null,
@@ -255,27 +255,7 @@ public class AccountRepository : IAccountRepository
                 }
             );
 
-            // create and send email confirmation link
-            var token = TokenGenerator.GenerateToken(32);
-
-            var TokenPK = Guid.NewGuid().ToString();
-            var LoginProvider = AccountProviders.EMAIL_CONFIRMATION.ToString();
-            // make sure there are no spaces to preserve consistent token identity when passing thru urls
-            var ProviderKey = token.Replace(" ", "+");
-            var UserIdFK = UserId;
-
-            await passwordAccountContext.Usertokens.AddAsync(new Usertoken
-            {
-                Id = TokenPK,
-                Loginprovider = LoginProvider,
-                Providerkey = ProviderKey,
-                Userid = UserIdFK,
-            });
-
-            var emailLink = $"{httpContextAccessor.HttpContext.Request.Scheme}://{httpContextAccessor.HttpContext.Request.Host}";
-
-            // store token in user token table
-            SendConfirmationEmail(model.Email, $"{httpContextAccessor.HttpContext.Request.Scheme}://{httpContextAccessor.HttpContext.Request.Host}/api/Account/confirm-email/?token={token}&userId={UserIdFK}");
+            await CreateEmailConfirmationToken(model.Email, UserId);
 
             // assign role of "User" to this user
             var role = await passwordAccountContext.Roles.FirstOrDefaultAsync(r => r.Name == "User");
@@ -301,6 +281,31 @@ public class AccountRepository : IAccountRepository
         }
     }
 
+    private async Task CreateEmailConfirmationToken(string email, string UserId)
+    {
+        // create and send email confirmation link
+        var token = TokenGenerator.GenerateToken(32);
+
+        var TokenPK = Guid.NewGuid().ToString();
+        var LoginProvider = AccountProviders.EMAIL_CONFIRMATION.ToString();
+        // make sure there are no spaces to preserve consistent token identity when passing thru urls
+        var ProviderKey = token.Replace(" ", "+");
+        var UserIdFK = UserId;
+
+        await passwordAccountContext.Usertokens.AddAsync(new Usertoken
+        {
+            Id = TokenPK,
+            Loginprovider = LoginProvider,
+            Providerkey = ProviderKey,
+            Userid = UserIdFK,
+        });
+
+        var emailLink = $"{httpContextAccessor.HttpContext.Request.Scheme}://{httpContextAccessor.HttpContext.Request.Host}";
+
+        // store token in user token table
+        SendConfirmationEmail(email, $"{emailLink}/api/Account/confirm-email/?token={token}&userId={UserIdFK}");
+    }
+
     public async Task<ServiceResponse> UpdateUserAsync(EditAccountDTO model)
     {
         // yell at the user if old password is incorrect
@@ -316,7 +321,6 @@ public class AccountRepository : IAccountRepository
         if (hashedPW != userModel.Passwordhash)
         {
             return new ServiceResponse(false, "Your old password is incorrect!");
-
         }
 
         // modify fields
@@ -343,21 +347,25 @@ public class AccountRepository : IAccountRepository
             // add new role
             await passwordAccountContext.Userroles.AddAsync(new Userrole { Roleid = role!.RoleId, Userid = userId, Id = Guid.NewGuid().ToString() });
             await passwordAccountContext.SaveChangesAsync();
-
         }
 
-        // TODO: send confirmation email if user entered a new email
+        // send confirmation email if user entered a new email
         // only remove the current working email once confirmed
         // in case they make a mistake and typed in the wrong email and cant log back in
+        await CreateEmailConfirmationToken(model.Email!, userModel.Id);
 
-        // TODO: add the new email to a "potential new email" column and set the email column value to it if the new email is confirmed
+        // add the new email to a "potential new email" column and set the email column value to it if the new email is confirmed
+        if (model.Email != userModel.Email)
+        {
+            userModel.Newemail = model.Email;
+            await passwordAccountContext.SaveChangesAsync();
+        }
 
-        await passwordAccountContext.SaveChangesAsync();
 
         return new ServiceResponse(true, "success!");
     }
 
-    public async Task<ServiceResponse> VerifyTokenAsync(AccountProviders accountProviders, string token, string userId)
+    public async Task<ServiceResponse> ConfirmEmailAsync(AccountProviders accountProviders, string token, string userId)
     {
         var loginProvider = accountProviders.ToString();
         try
@@ -375,9 +383,16 @@ public class AccountRepository : IAccountRepository
             }
 
             // mark email as confirmed
-            var updatedUserEmailConfirmed = await passwordAccountContext.PasswordmanagerUsers.FirstAsync(u => u.Id == userId);
+            var user = await passwordAccountContext.PasswordmanagerUsers.FirstAsync(u => u.Id == userId);
             // updatedUserEmailConfirmed.Emailconfirmed.Set(0, true);
-            updatedUserEmailConfirmed.Emailconfirmed = new BitArray(new bool[] { true });
+            user.Emailconfirmed = new BitArray(new bool[] { true });
+
+            // set email to the new email if the new email exists then remove the value from new email column
+            user.Email = user.Newemail ?? user.Email;
+            user.Newemail = null;
+
+            // remove user token
+            passwordAccountContext.Usertokens.Remove(result);
 
             await passwordAccountContext.SaveChangesAsync();
 

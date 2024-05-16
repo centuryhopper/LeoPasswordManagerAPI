@@ -18,6 +18,6 @@ public interface IAccountRepository
     Task<IEnumerable<RoleDTO>> GetRolesAsync();
     Task<ServiceResponse> UpdateUserAsync(EditAccountDTO model);
     Task<ServiceResponse> DeleteUserAsync(string Id);
-    Task<ServiceResponse> VerifyTokenAsync(AccountProviders accountProviders, string token, string userId);
+    Task<ServiceResponse> ConfirmEmailAsync(AccountProviders accountProviders, string token, string userId);
     Task<EmailConfirmStatus> IsEmailConfirmed(string email);
 }

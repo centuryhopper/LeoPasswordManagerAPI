@@ -27,7 +27,7 @@ public class AccountController : ControllerBase
     }
 
     [HttpPut, Route("update-user-details")]
-    // [Authorize]
+    [Authorize]
     public async Task<IActionResult> UpdateUserAsync([FromBody] EditAccountDTO dto)
     {
         var updateUserResult = await accountRepository.UpdateUserAsync(dto);
@@ -93,13 +93,14 @@ public class AccountController : ControllerBase
     [Authorize]
     public IActionResult Test()
     {
+        // logger.LogWarning("logged from accounts controller test method!");
         return Ok("access granted");
     }
 
     [HttpPost, Route("confirm-email"), AllowAnonymous]
     public async Task<IActionResult> ConfirmEmailAsync(string token, string userId)
     {
-        var verifyToken = await accountRepository.VerifyTokenAsync(AccountProviders.EMAIL_CONFIRMATION, token, userId);
+        var verifyToken = await accountRepository.ConfirmEmailAsync(AccountProviders.EMAIL_CONFIRMATION, token, userId);
 
         if (!verifyToken.flag)
         {
