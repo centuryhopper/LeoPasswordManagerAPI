@@ -13,7 +13,7 @@ public partial class PasswordManagerDbContext : DbContext
     {
     }
 
-    public PasswordManagerDbContext(DbContextOptions<PasswordAccountContext> options, IConfiguration configuration, IHostEnvironment env)
+    public PasswordManagerDbContext(DbContextOptions<PasswordManagerDbContext> options, IConfiguration configuration, IHostEnvironment env)
         : base(options)
     {
         this.configuration = configuration;

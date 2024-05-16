@@ -8,7 +8,8 @@ namespace LeoPasswordManagerAPI.Interfaces;
 
 public interface IAccountRepository
 {
-    Task<UserModel?> GetUserByEmailAsync(string email);
+    Task<UserDTO?> GetUserByIdAsDTOAsync(string userId);
+    Task<UserDTO?> GetUserByEmailAsync(string email);
     Task<ServiceResponse> ChangePasswordAsync(string userId, string newPassword);
     Task<ServiceResponse> CheckPassword(string email, string password);
     Task<LoginResponse> LoginAsync(LoginDTO model);

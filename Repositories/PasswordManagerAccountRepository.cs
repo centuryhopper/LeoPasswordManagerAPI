@@ -13,9 +13,9 @@ public class PasswordManagerAccountRepository : IPasswordManagerAccountRepositor
 {
     private readonly EncryptionContext encryptionContext;
     private readonly ILogger<PasswordManagerAccountRepository> logger;
-    private readonly PasswordAccountContext PasswordAccountContext;
+    private readonly PasswordManagerDbContext PasswordAccountContext;
 
-    public PasswordManagerAccountRepository(EncryptionContext encryptionContext, ILogger<PasswordManagerAccountRepository> logger, PasswordAccountContext PasswordAccountContext)
+    public PasswordManagerAccountRepository(EncryptionContext encryptionContext, ILogger<PasswordManagerAccountRepository> logger, PasswordManagerDbContext PasswordAccountContext)
     {
         this.encryptionContext = encryptionContext;
         this.logger = logger;

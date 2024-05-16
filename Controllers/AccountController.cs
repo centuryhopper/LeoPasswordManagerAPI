@@ -131,6 +131,21 @@ public class AccountController : ControllerBase
         return Ok(result);
     }
 
+    [HttpGet]
+    [Route("get-user-profile")]
+    // [Authorize]
+    public async Task<IActionResult> GetUserProfileAsync()
+    {
+        if (!User.Identity.IsAuthenticated)
+        {
+            return BadRequest();
+        }
+        string userId = User.FindFirst(c=>c.Type == ClaimTypes.NameIdentifier).Value;
+
+        var user = await accountRepository.GetUserByIdAsDTOAsync(userId);
+
+        return Ok(user);
+    }
 
     [HttpPost]
     [Route("login")]
@@ -140,24 +155,24 @@ public class AccountController : ControllerBase
         if (!ModelState.IsValid)
         {
             var lst = Helpers.GetErrors<AccountController>(ModelState).ToList();
-            return BadRequest(string.Join("$$$", lst));
+            return BadRequest(new LoginResponse(false, msg: string.Join("$$$", lst)));
         }
 
         if (User.Identity.IsAuthenticated)
         {
-            return BadRequest("You're already logged in");
+            return BadRequest(new LoginResponse(false, msg: "You're already logged in"));
         }
 
         if (await accountRepository.IsEmailConfirmed(vm.Email) == EmailConfirmStatus.NOT_CONFIRMED)
         {
-            return BadRequest("Please confirm your email.");
+            return BadRequest(new LoginResponse(false, msg: "Please confirm your email."));
         }
 
         // we don't tell the user that this email isn't in our database to avoid data breaching
         // that's why we give a generic error message below
         if (await accountRepository.IsEmailConfirmed(vm.Email) == EmailConfirmStatus.ACCOUNT_NOT_REGISTERED)
         {
-            return BadRequest("Your identity couldn't be verified with us.");
+            return BadRequest(new LoginResponse(false, msg: "Your identity couldn't be verified with us."));
         }
 
         var result = await accountRepository.LoginAsync(vm);

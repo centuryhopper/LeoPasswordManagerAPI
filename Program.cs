@@ -61,16 +61,30 @@ try
             swagger.SwaggerDoc("v1", new OpenApiInfo {
                 Version = "v1",
                 Title = "Password Manager Web API",
-                Description = "Authentication with JWT",
+                Description = "Authentication with Cookies",
             });
         }
     );
 
-    builder.Services.AddDbContext<PasswordAccountContext>();
+    builder.Services.AddDbContext<PasswordManagerDbContext>();
 
     builder.Services.AddSingleton<EncryptionContext>();
     builder.Services.AddScoped<IAccountRepository, AccountRepository>();
     builder.Services.AddScoped<IPasswordManagerAccountRepository<PasswordmanagerAccount>,PasswordManagerAccountRepository>();
+
+
+    builder.Services.AddCors(options =>
+{
+    options.AddPolicy("CorsSpecs",
+    builder =>
+    {
+        builder
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .SetIsOriginAllowed(options => true)
+            .AllowCredentials();
+    });
+});
 
 
 
@@ -86,14 +100,15 @@ try
         app.UseSwaggerUI();
     }
 
-    app.UseCors(policy =>
-    {
-        // policy.WithOrigins("http://localhost:5121")
-        policy.AllowAnyOrigin()
-        .AllowAnyMethod()
-        .AllowAnyHeader()
-        .WithHeaders(HeaderNames.ContentType);
-    });
+    app.UseCors("CorsSpecs");
+    // app.UseCors(policy =>
+    // {
+    //     // policy.WithOrigins("http://localhost:5121")
+    //     policy.AllowAnyOrigin()
+    //     .AllowAnyMethod()
+    //     .AllowAnyHeader()
+    //     .WithHeaders(HeaderNames.ContentType);
+    // });
 
     app.UseDeveloperExceptionPage();
 
