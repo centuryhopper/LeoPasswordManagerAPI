@@ -102,12 +102,12 @@ public class PasswordManagerAccountRepository : IPasswordManagerAccountRepositor
 
         using var streamReader = new StreamReader(file.OpenReadStream());
         using var csvReader = new CsvReader(streamReader, config);
-        IAsyncEnumerable<PasswordManagerAccountDTO> records;
+        IAsyncEnumerable<PasswordUploadDTO> records;
 
         try
         {
             csvReader.Context.RegisterClassMap<PasswordsMapper>();
-            records = csvReader.GetRecordsAsync<PasswordManagerAccountDTO>();
+            records = csvReader.GetRecordsAsync<PasswordUploadDTO>();
 
             await foreach (var record in records)
             {
@@ -126,7 +126,7 @@ public class PasswordManagerAccountRepository : IPasswordManagerAccountRepositor
             return new ServiceResponse(false, "Failed to upload csv");
         }
 
-        return new ServiceResponse(false, "Upload csv success!");
+        return new ServiceResponse(true, "Upload csv success!");
     }
 
 }

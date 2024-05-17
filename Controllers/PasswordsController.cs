@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace LeoPasswordManagerAPI.Controllers;
 
+// [DisableRequestSizeLimit]
 [ApiController]
 [Route("api/[controller]")]
 public class PasswordsController : ControllerBase
@@ -33,6 +34,8 @@ public class PasswordsController : ControllerBase
     [Route("create")]
     public async Task<IActionResult> Post([FromBody] PasswordManagerAccountDTO model)
     {
+        string userId = User.FindFirst(c=>c.Type == ClaimTypes.NameIdentifier).Value;
+        model.Userid = userId;
         var create = await passwordManagerAccountRepository.CreateAsync(model);
 
         if (create is null)
@@ -71,13 +74,11 @@ public class PasswordsController : ControllerBase
         return Ok(delete);
     }
 
-    [HttpPost]
-    [Route("upload-csv")]
-    [Authorize]
-    public async Task<IActionResult> UploadCSV(IFormFile file)
+    // [Authorize]
+    [HttpPost("[action]/single/{userId}")]
+    // [Route("upload/{userId}")]
+    public async Task<IActionResult> Upload(IFormFile file, string userId)
     {
-        string userId = User.FindFirst(c=>c.Type == ClaimTypes.NameIdentifier).Value;
-
         var result = await passwordManagerAccountRepository.UploadCsvAsync(file, userId);
 
         if (!result.flag)
