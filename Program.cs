@@ -1,4 +1,5 @@
 using LeoPasswordManagerAPI.Contexts;
+using LeoPasswordManagerAPI.DTOs;
 using LeoPasswordManagerAPI.Interfaces;
 using LeoPasswordManagerAPI.Repositories;
 using LeoPasswordManagerAPI.Utilities;
@@ -70,7 +71,7 @@ try
 
     builder.Services.AddSingleton<EncryptionContext>();
     builder.Services.AddScoped<IAccountRepository, AccountRepository>();
-    builder.Services.AddScoped<IPasswordManagerAccountRepository<PasswordmanagerAccount>,PasswordManagerAccountRepository>();
+    builder.Services.AddScoped<IPasswordManagerAccountRepository<PasswordManagerAccountDTO>,PasswordManagerAccountRepository>();
 
 
     builder.Services.AddCors(options =>

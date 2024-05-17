@@ -5,11 +5,14 @@ using Microsoft.EntityFrameworkCore;
 using LeoPasswordManagerAPI.Contexts;
 using LeoPasswordManagerAPI.Interfaces;
 using LeoPasswordManagerAPI.Models;
+using LeoPasswordManagerAPI.DTOs;
+using LeoPasswordManagerAPI.Utilities;
+using Business.DTOs;
 
 
 namespace LeoPasswordManagerAPI.Repositories;
 
-public class PasswordManagerAccountRepository : IPasswordManagerAccountRepository<PasswordmanagerAccount>
+public class PasswordManagerAccountRepository : IPasswordManagerAccountRepository<PasswordManagerAccountDTO>
 {
     private readonly EncryptionContext encryptionContext;
     private readonly ILogger<PasswordManagerAccountRepository> logger;
@@ -22,37 +25,43 @@ public class PasswordManagerAccountRepository : IPasswordManagerAccountRepositor
         this.PasswordAccountContext = PasswordAccountContext;
     }
 
-    public async Task<PasswordmanagerAccount?> CreateAsync(PasswordmanagerAccount model)
+    public async Task<PasswordManagerAccountDTO?> CreateAsync(PasswordManagerAccountDTO model)
     {
         model.Id = Guid.NewGuid().ToString();
         model.Password = Convert.ToBase64String(encryptionContext.Encrypt(model.Password));
         model.CreatedAt = DateTime.Now.ToString("yyyy-MM-dd");
-        await PasswordAccountContext.PasswordmanagerAccounts.AddAsync(model);
+        await PasswordAccountContext.PasswordmanagerAccounts.AddAsync(model.ToPasswordManagerAccount());
         await PasswordAccountContext.SaveChangesAsync();
         return model;
     }
 
-    public async Task<PasswordmanagerAccount?> DeleteAsync(PasswordmanagerAccount model)
+    public async Task<PasswordManagerAccountDTO?> DeleteAsync(string passwordAccountId, string userId)
     {
-        var queryModel = await PasswordAccountContext.PasswordmanagerAccounts.FindAsync(model.Id, model.Userid);
+        var queryModel = await PasswordAccountContext.PasswordmanagerAccounts.FindAsync(passwordAccountId, userId);
+
+        if (queryModel is null)
+        {
+            return null;
+        }
+
         PasswordAccountContext.PasswordmanagerAccounts.Remove(queryModel!);
         await PasswordAccountContext.SaveChangesAsync();
-        return model;
+        return queryModel.ToPasswordManagerAccountDTO();
     }
 
-    public async Task<IEnumerable<PasswordmanagerAccount>> GetAllAccountsAsync(string userId)
+    public async Task<IEnumerable<PasswordManagerAccountDTO>> GetAllAccountsAsync(string userId)
     {
         var results = await PasswordAccountContext.PasswordmanagerAccounts.AsNoTracking().Where(a => a.Userid == userId).ToListAsync();
         // var results = await PasswordAccountContext.PasswordmanagerAccounts.AsNoTracking().ToListAsync();
 
         if (!results.Any())
         {
-            return Enumerable.Empty<PasswordmanagerAccount>();
+            return Enumerable.Empty<PasswordManagerAccountDTO>();
         }
 
         return results.Select(m =>
         {
-            return new PasswordmanagerAccount
+            return new PasswordManagerAccountDTO
             {
                 Id = m.Id,
                 Title = m.Title,
@@ -71,7 +80,7 @@ public class PasswordManagerAccountRepository : IPasswordManagerAccountRepositor
         return cnt;
     }
 
-    public async Task<PasswordmanagerAccount?> UpdateAsync(PasswordmanagerAccount model)
+    public async Task<PasswordManagerAccountDTO?> UpdateAsync(PasswordManagerAccountDTO model)
     {
         var dbModel = await PasswordAccountContext.PasswordmanagerAccounts.FindAsync(model.Id, model.Userid);
         dbModel!.LastUpdatedAt = DateTime.Now.ToString("yyyy-MM-dd");
@@ -83,7 +92,7 @@ public class PasswordManagerAccountRepository : IPasswordManagerAccountRepositor
         return model;
     }
 
-    public async Task<UploadStatus> UploadCsvAsync(IFormFile file, string userid)
+    public async Task<ServiceResponse> UploadCsvAsync(IFormFile file, string userid)
     {
         // set up csv helper and read file
         var config = new CsvConfiguration(CultureInfo.InvariantCulture)
@@ -93,16 +102,16 @@ public class PasswordManagerAccountRepository : IPasswordManagerAccountRepositor
 
         using var streamReader = new StreamReader(file.OpenReadStream());
         using var csvReader = new CsvReader(streamReader, config);
-        IAsyncEnumerable<PasswordmanagerAccount> records;
+        IAsyncEnumerable<PasswordManagerAccountDTO> records;
 
         try
         {
             csvReader.Context.RegisterClassMap<PasswordsMapper>();
-            records = csvReader.GetRecordsAsync<PasswordmanagerAccount>();
+            records = csvReader.GetRecordsAsync<PasswordManagerAccountDTO>();
 
             await foreach (var record in records)
             {
-                await CreateAsync(new PasswordmanagerAccount
+                await CreateAsync(new PasswordManagerAccountDTO
                 {
                     Id = Guid.NewGuid().ToString(),
                     Userid = userid,
@@ -114,18 +123,10 @@ public class PasswordManagerAccountRepository : IPasswordManagerAccountRepositor
         }
         catch (CsvHelperException ex)
         {
-            return new UploadStatus
-            {
-                Message = "Failed to upload csv",
-                UploadEnum = UploadEnum.FAIL
-            };
+            return new ServiceResponse(false, "Failed to upload csv");
         }
 
-        return new UploadStatus
-        {
-            Message = "Upload csv success!",
-            UploadEnum = UploadEnum.SUCCESS
-        };
+        return new ServiceResponse(false, "Upload csv success!");
     }
 
 }

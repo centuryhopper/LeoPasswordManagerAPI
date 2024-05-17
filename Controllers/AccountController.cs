@@ -1,13 +1,10 @@
 using System.Security.Claims;
 using LeoPasswordManager.Models;
-using LeoPasswordManagerAPI.Contexts;
 using LeoPasswordManagerAPI.DTOs;
 using LeoPasswordManagerAPI.Interfaces;
 using LeoPasswordManagerAPI.Models;
 using LeoPasswordManagerAPI.Utilities;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 

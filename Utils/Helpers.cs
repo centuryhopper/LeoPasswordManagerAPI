@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using MimeKit;
 using MailKit.Net.Smtp;
+using LeoPasswordManagerAPI.DTOs;
+using LeoPasswordManagerAPI.Contexts;
 
 namespace LeoPasswordManagerAPI.Utilities;
 
@@ -57,4 +59,31 @@ public static class Helpers
             client.Dispose();
         }
     }
+
+    public static PasswordmanagerAccount ToPasswordManagerAccount(this PasswordManagerAccountDTO dto)
+    {
+        return new PasswordmanagerAccount {
+            Id = dto.Id
+            ,Userid = dto.Userid
+            ,Title = dto.Title
+            ,Username = dto.Username
+            ,Password = dto.Password
+            ,CreatedAt = dto.CreatedAt
+            ,LastUpdatedAt = dto.LastUpdatedAt
+        };
+    }
+
+    public static PasswordManagerAccountDTO ToPasswordManagerAccountDTO(this PasswordmanagerAccount account)
+    {
+        return new PasswordManagerAccountDTO {
+            Id = account.Id
+            ,Userid = account.Userid
+            ,Title = account.Title
+            ,Username = account.Username
+            ,Password = account.Password
+            ,CreatedAt = account.CreatedAt
+            ,LastUpdatedAt = account.LastUpdatedAt
+        };
+    }
+
 }

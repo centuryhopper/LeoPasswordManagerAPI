@@ -1,5 +1,8 @@
+using System.Security.Claims;
 using LeoPasswordManagerAPI.Contexts;
+using LeoPasswordManagerAPI.DTOs;
 using LeoPasswordManagerAPI.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LeoPasswordManagerAPI.Controllers;
@@ -9,9 +12,9 @@ namespace LeoPasswordManagerAPI.Controllers;
 public class PasswordsController : ControllerBase
 {
     private readonly ILogger<PasswordsController> logger;
-    private readonly IPasswordManagerAccountRepository<PasswordmanagerAccount> passwordManagerAccountRepository;
+    private readonly IPasswordManagerAccountRepository<PasswordManagerAccountDTO> passwordManagerAccountRepository;
 
-    public PasswordsController(ILogger<PasswordsController> logger, IPasswordManagerAccountRepository<PasswordmanagerAccount> passwordManagerAccountRepository)
+    public PasswordsController(ILogger<PasswordsController> logger, IPasswordManagerAccountRepository<PasswordManagerAccountDTO> passwordManagerAccountRepository)
     {
         this.logger = logger;
         this.passwordManagerAccountRepository = passwordManagerAccountRepository;
@@ -21,13 +24,14 @@ public class PasswordsController : ControllerBase
     [Route("getaccounts")]
     public async Task<IActionResult> Get()
     {
-        var userId = "c9162653-180b-4875-9fb3-40f8fd369b66";
+        string userId = User.FindFirst(c=>c.Type == ClaimTypes.NameIdentifier).Value;
+
         return Ok(await passwordManagerAccountRepository.GetAllAccountsAsync(userId));
     }
 
     [HttpPost]
     [Route("create")]
-    public async Task<IActionResult> Post([FromBody] PasswordmanagerAccount model)
+    public async Task<IActionResult> Post([FromBody] PasswordManagerAccountDTO model)
     {
         var create = await passwordManagerAccountRepository.CreateAsync(model);
 
@@ -41,7 +45,7 @@ public class PasswordsController : ControllerBase
 
     [HttpPut]
     [Route("update")]
-    public async Task<IActionResult> Update([FromBody] PasswordmanagerAccount model)
+    public async Task<IActionResult> Update([FromBody] PasswordManagerAccountDTO model)
     {
         var update = await passwordManagerAccountRepository.UpdateAsync(model);
 
@@ -55,9 +59,9 @@ public class PasswordsController : ControllerBase
 
     [HttpDelete]
     [Route("delete")]
-    public async Task<IActionResult> Delete([FromBody] PasswordmanagerAccount model)
+    public async Task<IActionResult> Delete([FromQuery] string passwordAccountId, [FromQuery] string userId)
     {
-        var delete = await passwordManagerAccountRepository.DeleteAsync(model);
+        var delete = await passwordManagerAccountRepository.DeleteAsync(passwordAccountId, userId);
 
         if (delete is null)
         {
@@ -65,5 +69,22 @@ public class PasswordsController : ControllerBase
         }
 
         return Ok(delete);
+    }
+
+    [HttpPost]
+    [Route("upload-csv")]
+    [Authorize]
+    public async Task<IActionResult> UploadCSV(IFormFile file)
+    {
+        string userId = User.FindFirst(c=>c.Type == ClaimTypes.NameIdentifier).Value;
+
+        var result = await passwordManagerAccountRepository.UploadCsvAsync(file, userId);
+
+        if (!result.flag)
+        {
+            return BadRequest(result);
+        }
+
+        return Ok(result);
     }
 }
