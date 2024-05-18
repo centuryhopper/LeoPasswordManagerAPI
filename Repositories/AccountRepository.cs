@@ -465,8 +465,19 @@ public class AccountRepository : IAccountRepository
         );
     }
 
-    Task<ServiceResponse> IAccountRepository.DeleteUserAsync(string Id)
+    public async Task<ServiceResponse> DeleteUserAsync(string Id)
     {
-        throw new NotImplementedException();
+        var user = await passwordManagerDbContext.PasswordmanagerUsers.FindAsync(Id);
+
+        if (user == null)
+        {
+            return new ServiceResponse(false,  "user couldn't be found");
+        }
+
+        passwordManagerDbContext.PasswordmanagerUsers.Remove(user);
+
+        await passwordManagerDbContext.SaveChangesAsync();
+
+        return new ServiceResponse(true,  "user has been deleted");
     }
 }

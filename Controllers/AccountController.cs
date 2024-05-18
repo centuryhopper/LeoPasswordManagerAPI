@@ -23,6 +23,21 @@ public class AccountController : ControllerBase
         this.accountRepository = accountRepository;
     }
 
+    [HttpDelete]
+    [Authorize]
+    [Route("delete-user/{userId}")]
+    public async Task<IActionResult> DeleteUserAsync(string userId)
+    {
+        var response = await accountRepository.DeleteUserAsync(userId);
+
+        if (!response.flag)
+        {
+            return BadRequest(response);
+        }
+
+        return Ok(response);
+    }
+
     [HttpPut, Route("update-user-details")]
     [Authorize]
     public async Task<IActionResult> UpdateUserAsync([FromBody] EditAccountDTO dto)
