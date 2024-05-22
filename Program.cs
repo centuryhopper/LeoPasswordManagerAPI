@@ -43,10 +43,11 @@ check tables via terminal:
     )
     .AddCookie(Constants.AUTH_NAME, options => {});
 
+    var isDev = builder.Environment.IsDevelopment();
     builder.Services.Configure<CookieAuthenticationOptions>(Constants.AUTH_NAME, options => {
         // options.AccessDeniedPath = "/Home/";
-        options.Cookie.SameSite = Microsoft.AspNetCore.Http.SameSiteMode.Strict;
-        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+        options.Cookie.SameSite = isDev ? Microsoft.AspNetCore.Http.SameSiteMode.None : Microsoft.AspNetCore.Http.SameSiteMode.Strict;
+        options.Cookie.SecurePolicy = isDev ? CookieSecurePolicy.None : CookieSecurePolicy.Always;
         // options.Cookie.HttpOnly = true;
         options.ExpireTimeSpan = TimeSpan.FromHours(1);
         options.Cookie.Name = "CookieMadeByLeo";
