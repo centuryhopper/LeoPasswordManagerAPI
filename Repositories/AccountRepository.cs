@@ -66,6 +66,13 @@ public class AccountRepository : IAccountRepository
     //     return new JwtSecurityTokenHandler().WriteToken(token);
     // }
 
+    public async Task<IEnumerable<UserDTO>> GetAllUsersAsync()
+    {
+        var users = await this.passwordManagerDbContext.PasswordmanagerUsers.ToListAsync();
+
+        return users.Select(u => u.ToPasswordManagerUser());
+    }
+
     public async Task<IEnumerable<RoleDTO>> GetRolesAsync()
     {
         return from role in await passwordManagerDbContext.Roles.ToListAsync() select new RoleDTO { RoleId = role.Id, RoleName = role.Name };
@@ -108,6 +115,29 @@ public class AccountRepository : IAccountRepository
     {
         var user = await passwordManagerDbContext.PasswordmanagerUsers.FindAsync(userId);
         return user;
+    }
+
+    public async Task<EditAccountDTO?> GetEditAccountUserAsync(string userId)
+    {
+        var user = await passwordManagerDbContext.PasswordmanagerUsers.FindAsync(userId);
+        if (user == null)
+        {
+            return null;
+        }
+
+        var userRoleDTO = await GetUserCurrentRoleAsync(userId);
+        if (userRoleDTO == null)
+        {
+            return null;
+        }
+
+        return new EditAccountDTO {
+            Id = user.Id
+            ,Email = user.Email
+            ,FirstName = user.Firstname
+            ,LastName = user.Lastname
+            ,Role = userRoleDTO!.RoleName
+        };
     }
 
     public async Task<UserDTO?> GetUserByIdAsDTOAsync(string userId)
@@ -161,24 +191,35 @@ public class AccountRepository : IAccountRepository
 
         // List<UserModel> dbResult = [];
 
-        var dbResult = from u in users
-                       where u.Email == email
-                       join ur in passwordManagerDbContext.Userroles on u.Id equals ur.Userid into userRoles_g
-                       from userRole in userRoles_g.DefaultIfEmpty()
-                       join r in passwordManagerDbContext.Roles on userRole.Roleid equals r.Id into roles_g
-                       from r in roles_g.DefaultIfEmpty()
-                       select new UserDTO
-                       {
-                           Id = u.Id,
-                           Salt = u.Salt,
-                           PasswordHash = u.Passwordhash,
-                           Email = u.Email,
-                           FirstName = u.Firstname,
-                           LastName = u.Lastname,
-                           Role = r.Name
-                       };
+        // var dbResult = from u in users
+        //                where u.Email == email
+        //                join ur in passwordManagerDbContext.Userroles on u.Id equals ur.Userid into userRoles_g
+        //                from userRole in userRoles_g.DefaultIfEmpty()
+        //                join r in passwordManagerDbContext.Roles on userRole.Roleid equals r.Id into roles_g
+        //                from r in roles_g.DefaultIfEmpty()
+        //                select new UserDTO
+        //                {
+        //                    Id = u.Id,
+        //                    Salt = u.Salt,
+        //                    PasswordHash = u.Passwordhash,
+        //                    Email = u.Email,
+        //                    FirstName = u.Firstname,
+        //                    LastName = u.Lastname,
+        //                    Role = r.Name
+        //                };
 
-        return await dbResult.FirstOrDefaultAsync();
+        var dbResult = await passwordManagerDbContext.PasswordmanagerUsers.Where(u=>u.Email == email).Include(u=>u.Userroles).ThenInclude(ur=>ur.Role).FirstOrDefaultAsync();
+
+
+        return new UserDTO {
+            Id = dbResult.Id,
+            Salt = dbResult.Salt,
+            PasswordHash = dbResult.Passwordhash,
+            Email = dbResult.Email,
+            FirstName = dbResult.Firstname,
+            LastName = dbResult.Lastname,
+            Role = dbResult.Userroles.First().Role.Name
+        };
     }
 
     public async Task<ServiceResponse> CheckPassword(string email, string password)
@@ -216,18 +257,34 @@ public class AccountRepository : IAccountRepository
             return new LoginResponse(false, msg: "User not found");
         }
 
-        var hashedPW = encryptionContext.OneWayHash($"{model.Password}{userModel.Salt}");
-
-        if (hashedPW == userModel.PasswordHash)
+        // this if block should never be true but if it is, then it was for me testing and playing around with the sql tables
+        if (string.IsNullOrEmpty(userModel.PasswordHash))
         {
-            // update login userfield
-            var user = await passwordManagerDbContext.PasswordmanagerUsers.FindAsync(userModel.Id);
-            user!.Datelastlogin = DateTime.Now;
-            await passwordManagerDbContext.SaveChangesAsync();
+            int salt = new Random().Next();
+            var saltedPW = $"{model.Password}{salt}";
+            var passwordHash = encryptionContext.OneWayHash(saltedPW);
 
-            return new LoginResponse(true, msg: "Login Succesful!", Id: userModel.Id, Name: userModel.FirstName + " " + userModel.LastName, Role: userModel.Role, Email: userModel.Email);
+            var user = await passwordManagerDbContext.PasswordmanagerUsers.FindAsync(userModel.Id);
+            user!.Passwordhash = passwordHash;
+            user.Salt = salt.ToString();
+            await passwordManagerDbContext.SaveChangesAsync();
+        }
+        else
+        {
+            var hashedPW = encryptionContext.OneWayHash($"{model.Password}{userModel.Salt}");
+
+            if (hashedPW == userModel.PasswordHash)
+            {
+                // update login userfield
+                var user = await passwordManagerDbContext.PasswordmanagerUsers.FindAsync(userModel.Id);
+                user!.Datelastlogin = DateTime.Now;
+                await passwordManagerDbContext.SaveChangesAsync();
+
+                return new LoginResponse(true, msg: "Login Succesful!", Id: userModel.Id, Name: userModel.FirstName + " " + userModel.LastName, Role: userModel.Role, Email: userModel.Email);
+            }
         }
 
+        
         return new LoginResponse(false, msg: "Incorrect email or password");
     }
 
@@ -296,6 +353,15 @@ public class AccountRepository : IAccountRepository
                     Datelastlogout = null,
                 }
             );
+
+            /*
+            INSERT INTO userroles (id, userid, roleid) VALUES (
+                '1f68e02b-3a47-4b8f-8e8b-345fa9d7c2a1',
+                'c9162653-180b-4875-9fb3-40f8fd369b66',
+                '6cc5f093-510e-43a7-a4f5-7fd24ba4b712'
+            )
+            
+            */
 
             await CreateEmailConfirmationToken(model.Email, UserId);
 
@@ -390,23 +456,25 @@ public class AccountRepository : IAccountRepository
 
             // add new role
             await passwordManagerDbContext.Userroles.AddAsync(new Userrole { Roleid = role!.RoleId, Userid = userId, Id = Guid.NewGuid().ToString() });
-            await passwordManagerDbContext.SaveChangesAsync();
         }
 
-        // send confirmation email if user entered a new email
-        // only remove the current working email once confirmed
-        // in case they make a mistake and typed in the wrong email and cant log back in
-        await CreateEmailConfirmationToken(model.Email!, userModel.Id);
-
-        // add the new email to a "potential new email" column and set the email column value to it if the new email is confirmed
-        if (model.Email != userModel.Email)
+        if (!string.IsNullOrEmpty(model.Email))
         {
-            userModel.Newemail = model.Email;
-            await passwordManagerDbContext.SaveChangesAsync();
+            // send confirmation email if user entered a new email
+            // only remove the current working email once confirmed
+            // in case they make a mistake and typed in the wrong email and cant log back in
+            await CreateEmailConfirmationToken(model.Email!, userModel.Id);
+
+            // add the new email to a "potential new email" column and set the email column value to it if the new email is confirmed
+            if (model.Email != userModel.Email)
+            {
+                userModel.Newemail = model.Email;
+            }
         }
 
+        await passwordManagerDbContext.SaveChangesAsync();
 
-        return new ServiceResponse(true, "success!");
+        return new ServiceResponse(true, "successfully updated your profile!");
     }
 
     public async Task<ServiceResponse> ConfirmEmailAsync(AccountProviders accountProviders, string token, string userId)

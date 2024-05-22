@@ -63,11 +63,11 @@ public static class Helpers
     public static PasswordmanagerAccount ToPasswordManagerAccount(this PasswordManagerAccountDTO dto)
     {
         return new PasswordmanagerAccount {
-            Id = dto.Id
-            ,Userid = dto.Userid
-            ,Title = dto.Title
-            ,Username = dto.Username
-            ,Password = dto.Password
+            Id = dto.Id!
+            ,Userid = dto.Userid!
+            ,Title = dto.Title!
+            ,Username = dto.Username!
+            ,Password = dto.Password!
             ,CreatedAt = dto.CreatedAt
             ,LastUpdatedAt = dto.LastUpdatedAt
         };
@@ -83,6 +83,18 @@ public static class Helpers
             ,Password = account.Password
             ,CreatedAt = account.CreatedAt
             ,LastUpdatedAt = account.LastUpdatedAt
+        };
+    }
+
+    public static UserDTO ToPasswordManagerUser(this PasswordmanagerUser dto)
+    {
+        return new UserDTO {
+            Id = dto.Id,
+            Salt = dto.Salt,
+            PasswordHash = dto.Passwordhash,
+            Email = dto.Email,
+            FirstName = dto.Firstname,
+            LastName = dto.Lastname,
         };
     }
 

@@ -23,6 +23,13 @@ public class AccountController : ControllerBase
         this.accountRepository = accountRepository;
     }
 
+    [HttpGet]
+    [Route("getusers")]
+    public async Task<IActionResult> GetUsers()
+    {
+        return Ok(await accountRepository.GetAllUsersAsync());
+    }
+
     [HttpDelete]
     [Authorize]
     [Route("delete-user/{userId}")]
@@ -109,8 +116,8 @@ public class AccountController : ControllerBase
         return Ok("access granted");
     }
 
-    [HttpPost, Route("confirm-email"), AllowAnonymous]
-    public async Task<IActionResult> ConfirmEmailAsync(string token, string userId)
+    [HttpGet, Route("confirm-email"), AllowAnonymous]
+    public async Task<IActionResult> ConfirmEmailAsync([FromQuery] string token, [FromQuery] string userId)
     {
         var verifyToken = await accountRepository.ConfirmEmailAsync(AccountProviders.EMAIL_CONFIRMATION, token, userId);
 
@@ -141,6 +148,20 @@ public class AccountController : ControllerBase
         }
 
         return Ok(result);
+    }
+
+    [HttpGet]
+    [Route("get-edit-profile/{userId}")]
+    public async Task<IActionResult> GetEditAccountUserAsync(string userId)
+    {
+        var editProfile = await accountRepository.GetEditAccountUserAsync(userId);
+
+        if (editProfile is null)
+        {
+            return NotFound("user profile not");
+        }
+
+        return Ok(editProfile);
     }
 
     [HttpGet]
