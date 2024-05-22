@@ -22,17 +22,17 @@ check tables via terminal:
 */
 
 // MUST HAVE IT LIKE THIS FOR NLOG TO RECOGNIZE DOTNET USER-SECRETS INSTEAD OF HARDCODED DELIMIT PLACEHOLDER VALUE FROM APPSETTINGS.JSON
-var logger = LogManager.Setup().LoadConfigurationFromFile("nlog.config").GetCurrentClassLogger();
+// var logger = LogManager.Setup().LoadConfigurationFromFile("nlog.config").GetCurrentClassLogger();
 
 
-try
-{
+// try
+// {
 
     var builder = WebApplication.CreateBuilder(args);
 
     // Add services to the container.
-    builder.Logging.ClearProviders();
-    builder.Host.UseNLog();
+    // builder.Logging.ClearProviders();
+    // builder.Host.UseNLog();
 
 
     builder.Services.AddAuthentication(
@@ -123,13 +123,13 @@ try
     app.MapControllers();
 
     app.Run();
-}
-catch (Exception ex)
-{
-    logger.Error(ex, "Stopped program because of exception: " + ex);
-    throw ex;
-}
-finally {
-    LogManager.Shutdown();
-}
+// }
+// catch (Exception ex)
+// {
+//     logger.Error(ex, "Stopped program because of exception: " + ex);
+//     throw ex;
+// }
+// finally {
+//     LogManager.Shutdown();
+// }
 

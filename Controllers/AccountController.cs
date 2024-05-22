@@ -60,7 +60,7 @@ public class AccountController : ControllerBase
     }
 
     [HttpGet, Route("get-roles")]
-    [Authorize]
+    // [Authorize]
     public async Task<IActionResult> GetRoles()
     {
         return Ok(await accountRepository.GetRolesAsync());
