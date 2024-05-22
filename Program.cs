@@ -88,7 +88,8 @@ try
 });
 
 
-
+    // comment this two lines out when testing locally
+    // but uncomment them when deploying
     var port = Environment.GetEnvironmentVariable("PORT") ?? "8081";
     builder.WebHost.UseUrls($"http://*:{port}");
 
