@@ -43,14 +43,17 @@ check tables via terminal:
     )
     .AddCookie(Constants.AUTH_NAME, options => {});
 
-    var isDev = builder.Environment.IsDevelopment();
+
+    // var isDev = builder.Environment.IsDevelopment();
     builder.Services.Configure<CookieAuthenticationOptions>(Constants.AUTH_NAME, options => {
         // options.AccessDeniedPath = "/Home/";
-        options.Cookie.SameSite = isDev ? Microsoft.AspNetCore.Http.SameSiteMode.None : Microsoft.AspNetCore.Http.SameSiteMode.Strict;
-        options.Cookie.SecurePolicy = isDev ? CookieSecurePolicy.None : CookieSecurePolicy.Always;
-        // options.Cookie.HttpOnly = true;
+        options.Cookie.SameSite = Microsoft.AspNetCore.Http.SameSiteMode.None;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+        options.Cookie.HttpOnly = true;
         options.ExpireTimeSpan = TimeSpan.FromHours(1);
         options.Cookie.Name = "CookieMadeByLeo";
+
+        
     });
 
     builder.Services.AddControllers();
@@ -91,8 +94,11 @@ check tables via terminal:
 
     // comment this two lines out when testing locally
     // but uncomment them when deploying
-    var port = Environment.GetEnvironmentVariable("PORT") ?? "8081";
-    builder.WebHost.UseUrls($"http://*:{port}");
+    if (builder.Environment.IsProduction())
+    {
+        var port = Environment.GetEnvironmentVariable("PORT") ?? "8081";
+        builder.WebHost.UseUrls($"http://*:{port}");
+    }
 
     var app = builder.Build();
 
