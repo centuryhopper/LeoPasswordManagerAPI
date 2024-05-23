@@ -89,6 +89,7 @@ check tables via terminal:
     builder =>
     {
         builder
+            .WithOrigins("https://centuryhopper.github.io/LeoPasswordManagerDeployed/", "http://localhost:5024")
             .AllowAnyHeader()
             .AllowAnyMethod()
             .SetIsOriginAllowed(options => true)
