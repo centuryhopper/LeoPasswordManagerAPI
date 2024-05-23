@@ -37,6 +37,7 @@ check tables via terminal:
     builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie(options => {
         options.Cookie.HttpOnly = true;
         options.Cookie.SameSite = Microsoft.AspNetCore.Http.SameSiteMode.Lax; // We don't want to deal with CSRF Tokens
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
     });
 
 
@@ -92,7 +93,7 @@ check tables via terminal:
             .WithOrigins("https://centuryhopper.github.io/LeoPasswordManagerDeployed/", "http://localhost:5024")
             .AllowAnyHeader()
             .AllowAnyMethod()
-            .SetIsOriginAllowed(options => true)
+            // .SetIsOriginAllowed(options => true)
             .AllowCredentials();
     });
 });
