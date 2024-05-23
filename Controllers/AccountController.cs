@@ -5,6 +5,7 @@ using LeoPasswordManagerAPI.Interfaces;
 using LeoPasswordManagerAPI.Models;
 using LeoPasswordManagerAPI.Utilities;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -103,7 +104,7 @@ public class AccountController : ControllerBase
     {
         var userId = User.FindFirst(c => c.Type == ClaimTypes.NameIdentifier)!.Value;
         var logoutResult = await accountRepository.LogoutAsync(userId);
-        await HttpContext.SignOutAsync(Constants.AUTH_NAME);
+        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
         return Ok(logoutResult);
     }
@@ -222,12 +223,12 @@ public class AccountController : ControllerBase
             };
 
             var claimsIdentity = new ClaimsIdentity(
-                claims, Constants.AUTH_NAME);
+                claims, CookieAuthenticationDefaults.AuthenticationScheme);
 
             var authProperties = new AuthenticationProperties();
 
             await HttpContext.SignInAsync(
-                Constants.AUTH_NAME,
+                CookieAuthenticationDefaults.AuthenticationScheme,
                 new ClaimsPrincipal(claimsIdentity),
                 authProperties);
 

@@ -34,27 +34,32 @@ check tables via terminal:
     // builder.Logging.ClearProviders();
     // builder.Host.UseNLog();
 
+    builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie(options => {
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SameSite = Microsoft.AspNetCore.Http.SameSiteMode.Lax; // We don't want to deal with CSRF Tokens
+    });
 
-    builder.Services.AddAuthentication(
-        options =>
-        {
-            options.DefaultScheme = Constants.AUTH_NAME;
-        }
-    )
-    .AddCookie(Constants.AUTH_NAME, options => {});
+
+    // builder.Services.AddAuthentication(
+    //     options =>
+    //     {
+    //         options.DefaultScheme = Constants.AUTH_NAME;
+    //     }
+    // )
+    // .AddCookie(Constants.AUTH_NAME, options => {});
 
 
     // var isDev = builder.Environment.IsDevelopment();
-    builder.Services.Configure<CookieAuthenticationOptions>(Constants.AUTH_NAME, options => {
-        // options.AccessDeniedPath = "/Home/";
-        options.Cookie.SameSite = Microsoft.AspNetCore.Http.SameSiteMode.None;
-        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-        options.Cookie.HttpOnly = true;
-        options.ExpireTimeSpan = TimeSpan.FromHours(1);
-        options.Cookie.Name = "CookieMadeByLeo";
+    // builder.Services.Configure<CookieAuthenticationOptions>(Constants.AUTH_NAME, options => {
+    //     // options.AccessDeniedPath = "/Home/";
+    //     options.Cookie.SameSite = Microsoft.AspNetCore.Http.SameSiteMode.None;
+    //     options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    //     options.Cookie.HttpOnly = true;
+    //     options.ExpireTimeSpan = TimeSpan.FromHours(1);
+    //     options.Cookie.Name = "CookieMadeByLeo";
 
         
-    });
+    // });
 
     builder.Services.AddControllers();
     builder.Services.AddHttpContextAccessor();
