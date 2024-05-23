@@ -99,7 +99,7 @@ public class AccountController : ControllerBase
         return Ok(changePasswordResult);
     }
 
-    [HttpGet, Route("logout"), Authorize]
+    [HttpGet, Route("logout")]
     public async Task<IActionResult> LogOut()
     {
         var userId = User.FindFirst(c => c.Type == ClaimTypes.NameIdentifier)!.Value;

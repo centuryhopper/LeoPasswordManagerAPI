@@ -99,7 +99,7 @@ check tables via terminal:
 
     // comment this two lines out when testing locally
     // but uncomment them when deploying
-    if (builder.Environment.IsProduction())
+    if (!builder.Environment.IsDevelopment())
     {
         var port = Environment.GetEnvironmentVariable("PORT") ?? "8081";
         builder.WebHost.UseUrls($"http://*:{port}");
