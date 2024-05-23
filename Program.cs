@@ -90,7 +90,7 @@ check tables via terminal:
     builder =>
     {
         builder
-            .WithOrigins("https://centuryhopper.github.io/LeoPasswordManagerDeployed/", "http://localhost:5024")
+            .WithOrigins("https://centuryhopper.github.io/LeoPasswordManagerDeployed", "http://localhost:5024")
             .AllowAnyHeader()
             .AllowAnyMethod()
             // .SetIsOriginAllowed(options => true)
@@ -128,7 +128,7 @@ check tables via terminal:
 
     app.UseDeveloperExceptionPage();
 
-    // app.UseHttpsRedirection();
+    app.UseHttpsRedirection();
 
     app.UseRouting();
     app.UseAuthentication();
