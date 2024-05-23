@@ -36,7 +36,7 @@ check tables via terminal:
 
     builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie(options => {
         options.Cookie.HttpOnly = true;
-        options.Cookie.SameSite = Microsoft.AspNetCore.Http.SameSiteMode.Lax; // We don't want to deal with CSRF Tokens
+        options.Cookie.SameSite = Microsoft.AspNetCore.Http.SameSiteMode.None; // We don't want to deal with CSRF Tokens
         options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
     });
 
